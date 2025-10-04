@@ -107,7 +107,7 @@ main(int argc, const char** argv) {
 
   Vector y_save(N);
   y_save = 0.7;
-  y_save << 0.9, 0.6, 0.1;
+  y_save << 0.9, 0.6, 0.1, -0.1;
 
   Real dx = 1.0e-8;
 
@@ -172,6 +172,7 @@ main(int argc, const char** argv) {
   TEST_BINARY_FUNC(min);
   TEST_BINARY_FUNC(fmax);
   TEST_BINARY_FUNC(fmin);
+  TEST_BINARY_FUNC(copysign);
 
 
   if (error_too_large) {

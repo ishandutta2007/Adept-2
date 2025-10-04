@@ -1256,6 +1256,77 @@ namespace adept {
       }
     };
 
+    // Policy class implementing copysign
+    struct CopySign {
+      static const bool is_operator  = false;  // Operator or function for expression_string()
+      static const int  store_result = 0;     // Do we need any scratch space?
+      static const bool is_vectorized = false;
+
+      const char* operation_string() const { return "copysign"; } // For expression_string()
+      
+      // Implement the basic operation
+      template <class LType, class RType>
+      typename promote<LType, RType>::type
+      operation(const LType& left, const RType& right) const {
+	// Not very efficient but no guarantee that copysign function
+	// is available, and also would need to check for
+	// compatibility of left and right types.
+	if (right >= 0) {
+	  return left;
+	}
+	else {
+	  return -left;
+	}
+      }
+      
+      // Calculate the gradient of the left-hand argument
+      template <int MyArrayNum, int MyScratchNum, int NArrays, int NScratch, class L, class R>
+      void calc_left(Stack& stack, const L& left, const R& right, const ExpressionSize<NArrays>& loc,
+			       const ScratchVector<NScratch>& scratch) const {
+	if (is_right_positive<MyArrayNum,MyScratchNum>(left,right,loc,scratch)) {
+	  left.template calc_gradient_<MyArrayNum, MyScratchNum+store_result>(stack, loc, scratch);
+	}
+	else {
+	  left.template calc_gradient_<MyArrayNum, MyScratchNum+store_result>(stack, loc, scratch, -1.0);
+	}
+      }
+
+      // Calculate the gradient of the right-hand argument
+      template <int MyArrayNum, int MyScratchNum, int NArrays, int NScratch, class L, class R>
+      void calc_right(Stack& stack, const L& left, const R& right, const ExpressionSize<NArrays>& loc,
+			       const ScratchVector<NScratch>& scratch) const {
+	// Do nothing: gradient of RHS is zero
+      }
+
+      // Calculate the gradient of the left-hand argument with a multiplier
+      template <int MyArrayNum, int MyScratchNum, int NArrays, int NScratch, class L, class R, typename MyType>
+      void calc_left(Stack& stack, const L& left, const R& right, const ExpressionSize<NArrays>& loc,
+			       const ScratchVector<NScratch>& scratch, MyType multiplier) const {
+	if (is_right_positive<MyArrayNum,MyScratchNum>(left,right,loc,scratch)) {
+	  left.template calc_gradient_<MyArrayNum, MyScratchNum+store_result>(stack, loc, scratch, multiplier);
+	}
+	else {
+	  left.template calc_gradient_<MyArrayNum, MyScratchNum+store_result>(stack, loc, scratch, -multiplier);
+	}
+      }
+
+      // Calculate the gradient of the right-hand argument with a multiplier
+      template <int MyArrayNum, int MyScratchNum, int NArrays, int NScratch, class L, class R, typename MyType>
+      void calc_right(Stack& stack, const L& left, const R& right, const ExpressionSize<NArrays>& loc,
+			       const ScratchVector<NScratch>& scratch, MyType multiplier) const {
+	// Do nothing: gradient of RHS is zero
+      }
+    private:
+      template <int MyArrayNum, int MyScratchNum, int NArrays, int NScratch, class L, class R>
+      bool is_right_positive(const L& left, const R& right, const ExpressionSize<NArrays>& loc,
+			     const ScratchVector<NScratch>& scratch) const {
+	return right.template value_stored_<MyArrayNum+L::n_arrays,MyScratchNum+L::n_scratch+store_result>(loc, scratch)
+	  >= 0.0;
+      }
+
+    };
+
+    
 
   } // End namespace internal
 
@@ -1320,6 +1391,7 @@ namespace adept {
   // can use these Adept functions even if you are not using C++11.
   ADEPT_DEFINE_OPERATION(Max, fmax)
   ADEPT_DEFINE_OPERATION(Min, fmin)
+  ADEPT_DEFINE_OPERATION(CopySign, copysign)
 
   // The following define Expr*Scalar; those in the list above but not
   // below (e.g. Divide) use a custom implementation of Expr*Scalar
@@ -1331,6 +1403,7 @@ namespace adept {
   ADEPT_DEFINE_SCALAR_RHS_OPERATION(Min, min)
   ADEPT_DEFINE_SCALAR_RHS_OPERATION(Max, fmax)
   ADEPT_DEFINE_SCALAR_RHS_OPERATION(Min, fmin)
+  ADEPT_DEFINE_SCALAR_RHS_OPERATION(CopySign, copysign)
 
 #undef ADEPT_DEFINE_OPERATION
 #undef ADEPT_DEFINE_SCALAR_RHS_OPERATION

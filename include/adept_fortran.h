@@ -76,7 +76,7 @@
 #include <adept_arrays.h>
 
 // GNU defines CFI_type_Bool as "_Bool", but this is only available in
-// C99, not C++, so we to make it an alias for C++'s "bool"
+// C99, not C++, so we make it an alias for C++'s "bool"
 #ifdef __GNUC__
 #include <stdbool.h>
 #endif
