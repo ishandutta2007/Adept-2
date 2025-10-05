@@ -303,6 +303,22 @@ namespace adept {
 	gradient_[i] = gradient[j];
       }
     }
+    template <typename MyReal>
+    typename internal::enable_if<internal::is_floating_point<MyReal>::value,
+		       void>::type
+    set_gradients(uIndex start, uIndex end_plus_one,
+		  const MyReal* gradient, Index src_stride, Index target_stride) {
+      // Need to initialize the gradient list if not already done
+      if (!gradients_are_initialized()) {
+	initialize_gradients();
+      }
+      if (end_plus_one > max_gradient_) {
+	throw gradient_out_of_range();
+      }
+      for (uIndex i = start, j = 0; i < end_plus_one; i+=target_stride, j+=src_stride) {
+	gradient_[i] = gradient[j];
+      }
+    }
 
     // Get the gradients in the list with indices between start and
     // end_plus_one-1 and put them in the location pointed to by

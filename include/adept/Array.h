@@ -2538,6 +2538,39 @@ namespace adept {
       return gradient;
     }
 
+
+    // Set gradients associated with the present active array to 
+    // the equivalent passive array provided as an argument
+    template <typename MyType>
+    void set_gradient(const Array<Rank,MyType,false>& gradient) const {
+      ADEPT_STATIC_ASSERT(IsActive,CANNOT_USE_SET_GRADIENT_ON_INACTIVE_ARRAY);
+      if (gradient.dimensions() != dimensions_) {
+	throw size_mismatch("Attempt to set_gradient to an array of different dimensions"
+			    ADEPT_EXCEPTION_LOCATION);
+      }
+      static const int last = Rank-1;
+      ExpressionSize<Rank> src_offset = gradient.offset();
+      ExpressionSize<Rank> i(0);
+      Index index = 0;
+      int my_rank;
+      Index index_src = 0;
+      Index last_dim_stretch = dimensions_[last]*offset_[last];
+      const MyType* src = gradient.data();
+      do {
+	i[last] = 0;
+	index_src = 0;
+	for (int r = 0; r < Rank-1; r++) {
+	  index_src += i[r]*src_offset[r];
+	}
+	ADEPT_ACTIVE_STACK->set_gradients(gradient_index()+index,
+					  gradient_index()+index+last_dim_stretch,
+					  src+index_src, src_offset[last], offset_[last]);
+	index += last_dim_stretch;
+	advance_index(index, my_rank, i);
+      } while (my_rank >= 0);
+    }
+
+    
     // std::vector<typename internal::active_scalar<Type,IsActive>::type>
     // std_vector() const {
     //   ADEPT_STATIC_ASSERT(Rank == 1, STD_VECTOR_ONLY_AVAILABLE_FOR_RANK_1_ARRAYS);

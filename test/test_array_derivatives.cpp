@@ -95,7 +95,7 @@ main(int argc, const char** argv) {
 
   std::cout << "dJ_dx_num_FixedArray = " << dJ_dx_num_FixedArray << "\n";
 
- // Adept calculation with aArray
+  // Adept calculation with aArray
   std::cout << "\nADEPT CALCULATION WITH \"aArray\"\n";
   Matrix dJ_dx_adept_Array(N,N);
   {
@@ -148,7 +148,65 @@ main(int argc, const char** argv) {
 	      << max_frac_err << ": FAILED\n";
     error_too_large = true;
   }
+  
 
+  // Adept forward calculation with aArray: four (NxN) separate
+  // calculations are required to compute the derivative with respect
+  // to the four inputs.
+  std::cout << "\nADEPT FORWARD CALCULATION WITH \"aArray\"\n";
+  Matrix dJ_dx_adept_forward_Array(N,N);
+  {
+    aMatrix aX = X;
+    stack.new_recording();
+    aReal aJ;
+    algorithm(aX, aJ);
+    std::cout << "J = " << aJ << "\n";
+
+    Matrix X_tl(N,N);
+
+    X_tl=0.0;
+    X_tl(0,0) = 1.0;
+    aX.set_gradient(X_tl);
+    stack.forward();
+    dJ_dx_adept_forward_Array(0,0) = aJ.get_gradient();
+
+    stack.clear_gradients();
+    X_tl=0.0;
+    X_tl(0,1) = 1.0;
+    aX.set_gradient(X_tl);
+    stack.forward();
+    dJ_dx_adept_forward_Array(0,1) = aJ.get_gradient();
+    
+    stack.clear_gradients();
+    X_tl=0.0;
+    X_tl(1,0) = 1.0;
+    aX.set_gradient(X_tl);
+    stack.forward();
+    dJ_dx_adept_forward_Array(1,0) = aJ.get_gradient();
+    
+    stack.clear_gradients();
+    X_tl=0.0;
+    X_tl(1,1) = 1.0;
+    aX.set_gradient(X_tl);
+    stack.forward();
+    dJ_dx_adept_forward_Array(1,1) = aJ.get_gradient();
+    
+  }
+
+  std::cout << "dJ_dx_adept_forward_Array = " << dJ_dx_adept_forward_Array << "\n";
+
+  max_frac_err = maxval(abs(dJ_dx_adept_forward_Array-dJ_dx_num)/dJ_dx_num);
+  if (max_frac_err <= MAX_FRAC_ERR) {
+    std::cout << "max fractional error = " << max_frac_err
+		<< ": PASSED\n";
+  }
+  else {
+    std::cout << "max fractional error = "
+	      << max_frac_err << ": FAILED\n";
+    error_too_large = true;
+  }
+
+  
   std::cout << "\n";
 
   if (error_too_large) {
